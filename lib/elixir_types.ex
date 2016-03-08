@@ -1,29 +1,37 @@
-defmodule Ledger do
-  @type balance :: integer
-  @type name :: atom | String.t
-  @type transaction :: {name, integer}
-  @type ledger(type) :: {:ledger, list(type), list(type)}
+defmodule Queue do
+  defstruct inbox: [], outbox: []
 
-  @type t :: ledger(transaction)
-  # ...
-end
+  @type t :: %__MODULE__{
+    inbox: list(),
+    outbox: list()
+  }
 
-  @spec new :: ledger(transaction)
-  def new() do
-    {:ledger, [pay(:andra, 20)], [pay(:chris, 10)]}
+  @spec push(Queue.t, any()) :: Queue.t
+  def push(%Queue{inbox: inbox, outbox: out}, x) do
+    %Queue{ inbox: [x|inbox], outbox: out}
   end
 
-  @spec pay(atom, integer) :: transaction
-  def pay(name, amount), do: {name, amount}
-
-  @spec money(transaction) :: integer
-  def money({_name, amount}) when is_integer(amount) do
-    amount
+  @spec pop(Queue.t) :: {any(), Queue.t}
+  def pop(%Queue{inbox: [], outbox: []}) do
+    raise "Empty fifo"
+  end
+  def pop(%Queue{inbox: inbox, outbox: []}) do
+    pop(%Queue{inbox: [], outbox: Enum.reverse(inbox)})
+  end
+  def pop(%Queue{inbox: inbox, outbox: [h|t]}) do
+    {h, %Queue{inbox: inbox, outbox: t}}
   end
 
-  @spec calculate_balance(integer, integer) :: balance
-  def calculate_balance(a, b), do: a - b
+  @spec new :: Queue.t
+  def new(), do: %Queue{}
 end
 
 defmodule ElixirTypes do
+  @spec run :: {integer, Queue.t}
+  def run do
+    Queue.new
+    |> Queue.push(2)
+    |> Queue.push(5)
+    |> Queue.pop
+  end
 end
